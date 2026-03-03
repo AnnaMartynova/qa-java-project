@@ -44,13 +44,14 @@ public class BurgerTest {
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
         }
 
         @Test
         public void shouldAssignBun() {
             burger.setBuns(mockBun);
+
             assertEquals(mockBun, burger.bun);
         }
     }
@@ -59,31 +60,33 @@ public class BurgerTest {
     public static class AddIngredientTest {
         private Burger burger;
         @Mock private Ingredient mockSauce;
-        @Mock private Ingredient mockFilling;
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
         }
 
         @Test
-        public void shouldIncreaseListSize() {
+        public void shouldIncreaseIngredientsSize() {
             burger.addIngredient(mockSauce);
+
             assertEquals(1, burger.ingredients.size());
         }
 
         @Test
-        public void shouldAddIngredientToList() {
+        public void shouldAddIngredientToTheEndOfList() {
             burger.addIngredient(mockSauce);
+
             assertEquals(mockSauce, burger.ingredients.get(0));
         }
 
         @Test
-        public void shouldMaintainOrder() {
+        public void shouldAddIngredientAtCorrectPosition_whenMultipleIngredients() {
+            Ingredient mockFilling = mock(Ingredient.class);
             burger.addIngredient(mockSauce);
             burger.addIngredient(mockFilling);
-            assertEquals(mockSauce, burger.ingredients.get(0));
+
             assertEquals(mockFilling, burger.ingredients.get(1));
         }
     }
@@ -96,26 +99,28 @@ public class BurgerTest {
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
             burger.addIngredient(mockSauce);
             burger.addIngredient(mockFilling);
         }
 
         @Test
-        public void shouldDecreaseListSize() {
+        public void shouldDecreaseIngredientsSize() {
             burger.removeIngredient(0);
+
             assertEquals(1, burger.ingredients.size());
         }
 
         @Test
-        public void shouldRemoveCorrectElement() {
+        public void shouldRemoveIngredientAtSpecifiedIndex() {
             burger.removeIngredient(0);
+
             assertEquals(mockFilling, burger.ingredients.get(0));
         }
 
         @Test(expected = IndexOutOfBoundsException.class)
-        public void shouldThrowExceptionWhenIndexInvalid() {
+        public void shouldThrowException_whenIndexIsInvalid() {
             burger.removeIngredient(99);
         }
     }
@@ -128,28 +133,34 @@ public class BurgerTest {
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
             burger.addIngredient(mockSauce);
             burger.addIngredient(mockFilling);
         }
 
         @Test
-        public void shouldMoveElement() {
+        public void shouldMoveIngredientToNewPosition() {
             burger.moveIngredient(1, 0);
+
             assertEquals(mockFilling, burger.ingredients.get(0));
         }
 
         @Test
-        public void shouldKeepOrderWhenMovingToSamePosition() {
+        public void shouldNotChangeOrder_whenMovingToSamePosition() {
             burger.moveIngredient(0, 0);
+
             assertEquals(mockSauce, burger.ingredients.get(0));
-            assertEquals(mockFilling, burger.ingredients.get(1));
         }
 
         @Test(expected = IndexOutOfBoundsException.class)
-        public void shouldThrowExceptionWhenIndexInvalid() {
+        public void shouldThrowException_whenFromIndexIsInvalid() {
             burger.moveIngredient(99, 0);
+        }
+
+        @Test(expected = IndexOutOfBoundsException.class)
+        public void shouldThrowException_whenToIndexIsInvalid() {
+            burger.moveIngredient(0, 99);
         }
     }
 
@@ -157,39 +168,58 @@ public class BurgerTest {
     public static class GetPriceTest {
         private Burger burger;
         @Mock private Bun mockBun;
-        @Mock private Ingredient mockSauce;
-        @Mock private Ingredient mockFilling;
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
         }
 
         @Test
-        public void shouldReturnDoubleBunPriceWhenNoIngredients() {
+        public void shouldReturnDoubleBunPrice_whenNoIngredients() {
             when(mockBun.getPrice()).thenReturn(150.0f);
             burger.setBuns(mockBun);
-            assertEquals(300.0f, burger.getPrice(), 0.01);
+
+            float actualPrice = burger.getPrice();
+
+            assertEquals(300.0f, actualPrice, 0.01);
         }
 
         @Test
-        public void shouldAddIngredientPrices() {
+        public void shouldIncludeIngredientPriceInTotal() {
             when(mockBun.getPrice()).thenReturn(100.0f);
+            Ingredient mockSauce = mock(Ingredient.class);
+            when(mockSauce.getPrice()).thenReturn(50.0f);
+            burger.setBuns(mockBun);
+            burger.addIngredient(mockSauce);
+
+            float actualPrice = burger.getPrice();
+
+            assertEquals(250.0f, actualPrice, 0.01);
+        }
+
+        @Test
+        public void shouldIncludeAllIngredientsPrices() {
+            when(mockBun.getPrice()).thenReturn(100.0f);
+            Ingredient mockSauce = mock(Ingredient.class);
+            Ingredient mockFilling = mock(Ingredient.class);
             when(mockSauce.getPrice()).thenReturn(50.0f);
             when(mockFilling.getPrice()).thenReturn(30.0f);
-
             burger.setBuns(mockBun);
             burger.addIngredient(mockSauce);
             burger.addIngredient(mockFilling);
 
-            assertEquals(280.0f, burger.getPrice(), 0.01);
+            float actualPrice = burger.getPrice();
+
+            assertEquals(280.0f, actualPrice, 0.01);
         }
 
         @Test
-        public void shouldCallBunGetPrice() {
+        public void shouldCallBunGetPriceMethod() {
             burger.setBuns(mockBun);
+
             burger.getPrice();
+
             verify(mockBun).getPrice();
         }
     }
@@ -207,7 +237,7 @@ public class BurgerTest {
             this.expectedPrice = expectedPrice;
         }
 
-        @Parameterized.Parameters(name = "{0} + {1} = {2}")
+        @Parameterized.Parameters(name = "bun={0}, ingredients={1} => {2}")
         public static Iterable<Object[]> data() {
             return Arrays.asList(new Object[][]{
                     {100.0f, Arrays.asList(50.0f, 30.0f), 280.0f},
@@ -230,7 +260,9 @@ public class BurgerTest {
                 burger.addIngredient(mockIngredient);
             }
 
-            assertEquals(expectedPrice, burger.getPrice(), 0.01);
+            float actualPrice = burger.getPrice();
+
+            assertEquals(expectedPrice, actualPrice, 0.01);
         }
     }
 
@@ -238,71 +270,68 @@ public class BurgerTest {
     public static class GetReceiptTest {
         private Burger burger;
         @Mock private Bun mockBun;
-        @Mock private Ingredient mockSauce;
-        @Mock private Ingredient mockFilling;
 
         @Before
         public void setUp() {
-            MockitoAnnotations.initMocks(this);
+            MockitoAnnotations.openMocks(this);
             burger = new Burger();
-        }
-
-        private void setupBun(String name) {
-            when(mockBun.getName()).thenReturn(name);
+            when(mockBun.getName()).thenReturn("black bun");
+            when(mockBun.getPrice()).thenReturn(100.0f);
             burger.setBuns(mockBun);
         }
 
         @Test
-        public void shouldContainBunName() {
-            setupBun("black bun");
+        public void shouldIncludeBunNameInReceipt() {
             String receipt = burger.getReceipt();
+
             assertTrue(receipt.contains("black bun"));
         }
 
         @Test
-        public void shouldContainSauceLine() {
-            setupBun("bun");
+        public void shouldIncludeSauceIngredientInReceipt() {
+            Ingredient mockSauce = mock(Ingredient.class);
             when(mockSauce.getType()).thenReturn(IngredientType.SAUCE);
             when(mockSauce.getName()).thenReturn("hot sauce");
             burger.addIngredient(mockSauce);
 
             String receipt = burger.getReceipt();
+
             assertTrue(receipt.contains("= sauce hot sauce ="));
         }
 
         @Test
-        public void shouldContainFillingLine() {
-            setupBun("bun");
+        public void shouldIncludeFillingIngredientInReceipt() {
+            Ingredient mockFilling = mock(Ingredient.class);
             when(mockFilling.getType()).thenReturn(IngredientType.FILLING);
             when(mockFilling.getName()).thenReturn("cutlet");
             burger.addIngredient(mockFilling);
 
             String receipt = burger.getReceipt();
+
             assertTrue(receipt.contains("= filling cutlet ="));
         }
 
         @Test
-        public void shouldContainPrice() {
-            setupBun("bun");
-            when(mockBun.getPrice()).thenReturn(100.0f);
-
+        public void shouldIncludeTotalPriceInReceipt() {
             String receipt = burger.getReceipt();
+
             assertTrue(receipt.contains("Price: 200,000000"));
         }
 
         @Test
-        public void shouldHaveFourLinesWhenNoIngredients() {
-            setupBun("bun");
+        public void shouldHaveFourLines_whenNoIngredients() {
             String[] lines = burger.getReceipt().split("\\n");
+
             assertEquals(4, lines.length);
         }
+
     }
 
     // ========== ИНТЕГРАЦИОННЫЕ ТЕСТЫ ==========
     public static class IntegrationTest {
 
         @Test
-        public void shouldWorkWithRealObjects() {
+        public void shouldCalculatePriceCorrectly_withRealObjects() {
             Burger burger = new Burger();
             Bun bun = new Bun("test bun", 100);
             Ingredient sauce = new Ingredient(IngredientType.SAUCE, "test sauce", 50);
@@ -310,8 +339,30 @@ public class BurgerTest {
             burger.setBuns(bun);
             burger.addIngredient(sauce);
 
-            assertEquals(250.0f, burger.getPrice(), 0.01);
+            float actualPrice = burger.getPrice();
+
+            assertEquals(250.0f, actualPrice, 0.01);
+        }
+
+        @Test
+        public void shouldIncludeBunNameInReceipt_withRealObjects() {
+            Burger burger = new Burger();
+            Bun bun = new Bun("test bun", 100);
+
+            burger.setBuns(bun);
+
             assertTrue(burger.getReceipt().contains("test bun"));
+        }
+
+        @Test
+        public void shouldIncludeIngredientInReceipt_withRealObjects() {
+            Burger burger = new Burger();
+            Bun bun = new Bun("test bun", 100);
+            Ingredient sauce = new Ingredient(IngredientType.SAUCE, "test sauce", 50);
+
+            burger.setBuns(bun);
+            burger.addIngredient(sauce);
+
             assertTrue(burger.getReceipt().contains("sauce test sauce"));
         }
     }
